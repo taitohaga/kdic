@@ -1,34 +1,25 @@
 package main
 
 import (
+	"os"
+
 	"github.com/kataras/iris/v12"
+	"github.com/taitohaga/kdic/config"
+	"github.com/taitohaga/kdic/route"
 )
 
-type LoginRequest struct {
-    Username string `json:"username"`
-    Email string `json:"email"`
-    Password string `json:"password"`
-}
-
 func main() {
-    app := iris.Default()
-    app.Handle("GET", "/", func(ctx iris.Context) {
-        ctx.JSON(iris.Map{"status": 1})
-    })
+	app := iris.Default()
+    
+    config.InitConfig()
+    app.Logger().Debugf("Mode: %s", os.Getenv("MODE"))
+    app.Logger().Debugf("DB Path: %s", os.Getenv("DBPATH"))
 
-    app.Handle("POST", "/login", func(ctx iris.Context) {
-        var loginReq LoginRequest
-        err := ctx.ReadJSON(&loginReq)
-        if err != nil {
-            ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().Title("Login Failure").DetailErr(err))
-            return
-        }
-        if loginReq.Username == "taitohaga" && loginReq.Password == "password" {
-            ctx.JSON(iris.Map{"status": 1, "access_token": "token"})
-        } else {
-            ctx.StatusCode(iris.StatusBadRequest)
-        }
-    })
+    version := app.Party("version")
+    route.CreateVersionRoute(version)
 
-    app.Listen(":8080")
+    auth := app.Party("auth")
+    route.CreateAuthRoute(auth)
+    
+	app.Listen(":8080")
 }
