@@ -1,0 +1,9 @@
+version: "0.1.0"
+
+secrey_key: "secret"
+
+db:
+  - host: "localhost"
+  - port: "3456"
+  - user: "kdic"
+  - password: "strongpass"
