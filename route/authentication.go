@@ -1,15 +1,27 @@
 package route
 
 import (
-    "github.com/kataras/iris/v12"
-    "github.com/taitohaga/kdic/services/auth"
+	"fmt"
+
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/jwt"
+	"github.com/taitohaga/kdic/config"
+	"github.com/taitohaga/kdic/services/auth"
 )
 
 func CreateAuthRoute(p iris.Party) {
+    verifyMiddleware := config.Verifier.Verify(func() interface{} {
+        return new(config.Claims)
+    })
     p.Handle("GET", "/", servicePing)
     p.Handle("POST", "/login", getJWT)
     p.Handle("POST", "/create", createUser)
     p.Handle("GET", "/i/{username:string}", getUser)
+    p.Handle("GET", "/i/{user_id:uint32}", getUserWithID)
+
+    profile := p.Party("/profile")
+    profile.Use(verifyMiddleware)
+    profile.Handle("GET", "/", getProfile)
 }
 
 func servicePing(ctx iris.Context) {
@@ -48,8 +60,31 @@ func getUser(ctx iris.Context) {
     username := ctx.Params().GetString("username")
     response, err := auth.GetUser(auth.GetUserRequest{UserName: username})
     if err != nil {
-        ctx.StopWithProblem(iris.StatusNotFound, iris.NewProblem().Title("Failed to get user info").DetailErr(err))
-        return
+        ctx.StatusCode(iris.StatusNotFound)
     }
     ctx.JSON(response)
+}
+
+func getUserWithID(ctx iris.Context) {
+    userID, err := ctx.Params().GetUint32("user_id")
+    if err != nil {
+        ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().Title("Failed to fetch user").DetailErr(err))
+        return
+    }
+    response, getErr := auth.GetUserWithID(auth.GetUserWithIDRequest{UserID: userID})
+    if getErr != nil {
+        ctx.StatusCode(iris.StatusNotFound)
+    }
+    ctx.JSON(response)
+}
+
+func getProfile(ctx iris.Context) {
+    username := jwt.Get(ctx).(*config.Claims).Username
+    response, err := auth.GetUser(auth.GetUserRequest{UserName: username})
+    if err != nil {
+        ctx.StopWithProblem(iris.StatusUnauthorized, iris.NewProblem().Title("Unauthorized").Detail(
+            fmt.Sprintf("Token given but could not fetch your profile: %s", err),
+        ))
+    }
+    ctx.JSON(response.User)
 }
