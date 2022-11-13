@@ -15,6 +15,7 @@ func CreateAuthRoute(p iris.Party) {
     })
     p.Handle("GET", "/", servicePing)
     p.Handle("POST", "/login", getJWT)
+    p.Handle("POST", "/refresh", refreshJWT)
     p.Handle("POST", "/create", createUser)
     p.Handle("GET", "/i/{username:string}", getUser)
     p.Handle("GET", "/i/{user_id:uint32}", getUserWithID)
@@ -22,6 +23,7 @@ func CreateAuthRoute(p iris.Party) {
     profile := p.Party("/profile")
     profile.Use(verifyMiddleware)
     profile.Handle("GET", "/", getProfile)
+    profile.Handle("GET", "/email", getEmail)
 }
 
 func servicePing(ctx iris.Context) {
@@ -37,6 +39,20 @@ func getJWT(ctx iris.Context) {
     }
     response, loginErr := auth.GetJWT(loginReq)
     if loginErr != nil {
+        ctx.StatusCode(iris.StatusBadRequest)
+    }
+    ctx.JSON(response)
+}
+
+func refreshJWT(ctx iris.Context) {
+    var request auth.RefreshJWTRequest
+    err := ctx.ReadJSON(&request)
+    if err != nil {
+        ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().Title("Refresh Failure").DetailErr(err))
+        return
+    }
+    response, refreshJWTErr := auth.RefreshJWT(auth.RefreshJWTRequest{RefreshToken: request.RefreshToken})
+    if refreshJWTErr != nil {
         ctx.StatusCode(iris.StatusBadRequest)
     }
     ctx.JSON(response)
@@ -87,4 +103,13 @@ func getProfile(ctx iris.Context) {
         ))
     }
     ctx.JSON(response.User)
+}
+
+func getEmail(ctx iris.Context) {
+    username := jwt.Get(ctx).(*config.Claims).Username
+    response, err := auth.GetEmail(auth.GetEmailRequest{Username: username})
+    if err != nil {
+        ctx.StatusCode(iris.StatusNotFound)
+    }
+    ctx.JSON(response)
 }

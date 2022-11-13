@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
-    "github.com/kataras/iris/v12/middleware/jwt"
-    "gorm.io/gorm"
 	"github.com/taitohaga/kdic/config"
 	"github.com/taitohaga/kdic/model"
 	"github.com/taitohaga/kdic/util"
+	"gorm.io/gorm"
 )
 
 var usernamePattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]{3,299}$`)
@@ -150,7 +150,12 @@ func GetJWT(request LoginRequest) (LoginResponse, error) {
         Username: u.Username,
         Email: email.Email,
     }
-    refreshClaims := jwt.Claims{Subject: u.Username}
+    refreshClaims := config.RefreshClaims{
+        UserID: u.ID,
+        Username: u.Username,
+        Email: email.Email,
+        Subject: u.Username,
+    }
     tokenPair, err := config.Signer.NewTokenPair(accessClaims, refreshClaims, config.RefreshTokenMaxAge)
     if err != nil {
         return LoginResponse{
@@ -159,8 +164,52 @@ func GetJWT(request LoginRequest) (LoginResponse, error) {
     }
     return LoginResponse{
         Message: fmt.Sprintf("Logged in as %s", u.Username),
-        AccessToken: string(tokenPair.AccessToken),
-        RefreshToken: string(tokenPair.RefreshToken),
+        AccessToken: strings.Replace(string(tokenPair.AccessToken), `"`, ``, 2),
+        RefreshToken: strings.Replace(string(tokenPair.RefreshToken), `"`, ``, 2),
+    }, nil
+}
+
+type RefreshJWTRequest struct {
+    RefreshToken string `json:"refresh_token"`
+}
+
+func RefreshJWT(request RefreshJWTRequest) (LoginResponse, error) {
+    refreshToken := []byte(request.RefreshToken)
+    result, err := config.Verifier.VerifyToken(refreshToken)
+    if err != nil {
+        return LoginResponse{
+            Message: fmt.Sprintf("Could not refresh token: %s", err),
+        }, err
+    }
+    var rc config.RefreshClaims
+    result.Claims(&rc)
+    getUserRes, getUserErr := GetUser(GetUserRequest{UserName: rc.Username})
+    if getUserErr != nil {
+        return LoginResponse{
+            Message: fmt.Sprintf("Refresh token is invalid since username has been changed."),
+        }, err
+    }
+    accessClaims := config.Claims{
+        UserID: getUserRes.User.ID,
+        Username: getUserRes.User.Username,
+        Email: rc.Email,
+    }
+    refreshClaims := config.RefreshClaims{
+        UserID: getUserRes.User.ID,
+        Username: getUserRes.User.Username,
+        Email: rc.Email,
+        Subject: rc.Subject,
+    }
+    tokenPair, err := config.Signer.NewTokenPair(accessClaims, refreshClaims, config.RefreshTokenMaxAge)
+    if err != nil {
+        return LoginResponse{
+            Message: fmt.Sprintf("Could not generate token: %s", err),
+        }, err
+    }
+    return LoginResponse{
+        Message: fmt.Sprintf("Logged in as %s", getUserRes.User.Username),
+        AccessToken: strings.Replace(string(tokenPair.AccessToken), `"`, ``, 2),
+        RefreshToken: strings.Replace(string(tokenPair.RefreshToken), `"`, ``, 2),
     }, nil
 }
 
@@ -204,5 +253,27 @@ func GetUserWithID(request GetUserWithIDRequest) (GetUserResponse, error) {
     return GetUserResponse{
         Message: fmt.Sprintf("Found user %d (%s)", u.ID, u.Username),
         User: u,
+    }, nil
+}
+
+type GetEmailRequest struct {
+    Username string `json:"username"`
+}
+
+type GetEmailResponse struct {
+    Message string `json:"msg"`
+    Email []model.Email `json:"email"`
+}
+
+func GetEmail(request GetEmailRequest) (GetEmailResponse, error) {
+    var email_list []model.Email
+    if res := config.Db.Joins("User").Find(&email_list); res.Error != nil {
+        return GetEmailResponse{
+            Message: fmt.Sprintf("Could not list user email: %s", res.Error),
+        }, res.Error
+    }
+    return GetEmailResponse{
+        Message: fmt.Sprintf("%s's %d email addresses fetched", request.Username, len(email_list)),
+        Email: email_list,
     }, nil
 }

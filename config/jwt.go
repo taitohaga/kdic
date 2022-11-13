@@ -35,6 +35,13 @@ type Claims struct {
 	Email    string `json:"email"`
 }
 
+type RefreshClaims struct {
+    UserID uint32 `json:"user_id"`
+    Username string `json:"username"`
+    Email string `json:"email"`
+    Subject string `json:"sub"`
+}
+
 func (c *Claims) GetUserID() uint32 {
 	return c.UserID
 }
