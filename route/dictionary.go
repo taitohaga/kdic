@@ -37,7 +37,7 @@ func authenticate(ctx iris.Context) {
 			return
 		}
 		userID := jwt.Get(ctx).(*config.Claims).UserID
-        username := jwt.Get(ctx).(*config.Claims).Username
+		username := jwt.Get(ctx).(*config.Claims).Username
 		isPermitted := false
 		for _, u := range checkAuthorityResponse.Users {
 			if u.ID == userID {
