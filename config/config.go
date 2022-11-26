@@ -1,10 +1,10 @@
 package config
 
 import (
-    "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 )
 
 func InitConfig() error {
-    err := godotenv.Load()
-    return err
+	err := godotenv.Load()
+	return err
 }
