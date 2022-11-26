@@ -36,6 +36,15 @@ CREATE TABLE IF NOT EXISTS "tb_dictionary" (
     "deleted_at" TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS "tb_r_user_dictionary" (
+    "id" SERIAL PRIMARY KEY,
+    "dictionary_id" SERIAL REFERENCES "tb_dictionary" (id),
+    "user_id" SERIAL REFERENCES "tb_user" (id),
+    "created_at" TIMESTAMP,
+    "updated_at" TIMESTAMP,
+    "deleted_at" TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS "tb_word" (
     "id" SERIAL PRIMARY KEY,
     "dictionary_id" INTEGER NOT NULL REFERENCES "tb_dictionary" (id),

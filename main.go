@@ -34,6 +34,9 @@ func main() {
 
     auth := app.Party("auth")
     route.CreateAuthRoute(auth)
+
+    dic := app.Party("dic")
+    route.CreateDicRoute(dic)
     
 	app.Listen(":8080")
 }

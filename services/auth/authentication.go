@@ -61,9 +61,14 @@ func CreateUser(req CreateUserRequest) (CreateUserResponse, error) {
 	}
 
     err := config.Db.Transaction(func(tx *gorm.DB) error {
+        var usernameCheck model.User
+        usernameCheckResult := tx.Where("username = ?", req.UserName).First(&usernameCheck)
+        if usernameCheckResult.RowsAffected > 0 {
+            return errors.New(fmt.Sprintf("\"%s\" already exists", req.UserName))
+        }
 		insertUser := tx.Create(&u)
 		if insertUser.Error != nil {
-			return errors.New(fmt.Sprintf("failed to create user: %s", insertUser.Error))
+            return errors.New(fmt.Sprintf("DB claims an error: %s", insertUser.Error))
 		}
 		u_email := model.Email{
 			User:  u,
@@ -72,7 +77,7 @@ func CreateUser(req CreateUserRequest) (CreateUserResponse, error) {
 		}
 		insertEmail := tx.Create(&u_email)
 		if insertEmail.Error != nil {
-			return errors.New(fmt.Sprintf("Could not use given email: %s", insertEmail.Error))
+			return errors.New(fmt.Sprintf("DB claims an error: %s", insertEmail.Error))
 		}
 		u_account := model.Account{
 			User:     u,
@@ -260,14 +265,20 @@ type GetEmailRequest struct {
     Username string `json:"username"`
 }
 
+type EmailAPI struct {
+    Email string `json:"email"`
+    IsVerified bool `json:"is_verified"`
+    IsPrimary bool `json:"is_primary"`
+}
+
 type GetEmailResponse struct {
     Message string `json:"msg"`
-    Email []model.Email `json:"email"`
+    Email []EmailAPI
 }
 
 func GetEmail(request GetEmailRequest) (GetEmailResponse, error) {
-    var email_list []model.Email
-    if res := config.Db.Joins("User").Find(&email_list); res.Error != nil {
+    var email_list []EmailAPI
+    if res := config.Db.Model(&model.Email{}).Joins("left join tb_user on tb_user.id = tb_email.user_id").Where("tb_user.username = ?", request.Username).Select("email", "is_verified", "is_primary").Find(&email_list); res.Error != nil {
         return GetEmailResponse{
             Message: fmt.Sprintf("Could not list user email: %s", res.Error),
         }, res.Error

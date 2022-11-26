@@ -6,17 +6,25 @@ import (
 )
 
 type Dictionary struct {
-    ID uint32
-    DictionaryName string
-    DictionaryDisplayName string
-    OwnerID uint32
-    User User `gorm:"foreignKey:OwnerID"`
-    Description string
-    ImageUrl string
-    ScansionUrl string
-    CreatedAt time.Time
-    UpdatedAt time.Time
-    DeletedAt gorm.DeletedAt
+    ID uint32 `json:"id"`
+    DictionaryName string `json:"dictionary_name"`
+    DictionaryDisplayName string `json:"dictionary_display_name"`
+    OwnerID uint32 `json:"owner_id"`
+    User User `gorm:"foreignKey:OwnerID" json:"owner"`
+    Description string `json:"description"`
+    ImageUrl string `json:"image_url"`
+    ScansionUrl string `json:"scansion_url"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+    DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+
+type RUserDictionary struct {
+    gorm.Model
+    DictionaryID uint32
+    Dictionary Dictionary
+    UserID uint32
+    User User
 }
 
 type Word struct {
@@ -25,9 +33,9 @@ type Word struct {
     Dictionary Dictionary
     AddedBy uint32
     User User `gorm:"foreignKey:AddedBy"`
-    CreatedAt time.Time
-    UpdatedAt time.Time
-    DeletedAt gorm.DeletedAt
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+    DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
 type WordSnapshot struct {
@@ -39,5 +47,5 @@ type WordSnapshot struct {
     Example string
     EditedBy uint32
     User `gorm:"foreignKey:EditedBy"`
-    UpdatedAt time.Time
+    UpdatedAt time.Time `json:"updated_at"`
 }
