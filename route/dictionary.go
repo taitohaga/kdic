@@ -36,10 +36,11 @@ func authenticate(ctx iris.Context) {
 			ctx.StopWithProblem(iris.StatusUnauthorized, iris.NewProblem().Title("Cannot access the dictionary").DetailErr(err))
 			return
 		}
-		username := jwt.Get(ctx).(*config.Claims).Username
+		userID := jwt.Get(ctx).(*config.Claims).UserID
+        username := jwt.Get(ctx).(*config.Claims).Username
 		isPermitted := false
 		for _, u := range checkAuthorityResponse.Users {
-			if u.Username == username {
+			if u.ID == userID {
 				isPermitted = true
 			}
 		}

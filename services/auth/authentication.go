@@ -288,3 +288,62 @@ func GetEmail(request GetEmailRequest) (GetEmailResponse, error) {
 		Email:   email_list,
 	}, nil
 }
+
+type SetProfileResponse struct {
+    Message string `json:"msg"`
+    UpdatedCount uint `json:"updated_count"`
+    User model.User `json:"updated_user"`
+}
+
+func SetProfile(request interface{}, jwtClaims *config.Claims) (SetProfileResponse, error) {
+    req := request.(map[string]interface{})
+    var updatedField uint = 0
+    for _, field := range []string{"display_name", "profile", "avatar_url"} {
+        if val, prs := req[field]; prs {
+            if field == "display_name" && val == "" {
+                continue
+            }
+            r := config.Db.Model(&model.User{}).Where("id = ?", jwtClaims.UserID).Update(field, val)
+            if r.Error == nil {
+                updatedField += 1
+            }
+        }
+    }
+    var u model.User
+    config.Db.Where("id = ?", jwtClaims.UserID).First(&u)
+    return SetProfileResponse{
+        Message: fmt.Sprintf("%d fields were updated", updatedField),
+        UpdatedCount: updatedField,
+        User: u,
+    }, nil
+}
+
+type SetUsernameRequest struct {
+    Username string `json:"username"`
+}
+
+type SetUsernameResponse struct {
+    Message string `json:"msg"`
+    Username string `json:"username"`
+}
+
+func SetUsername(request SetUsernameRequest, jwtClaims *config.Claims) (SetUsernameResponse, error) {
+    if err := config.Db.Transaction(func(tx *gorm.DB) error {
+        var usernameCheck model.User
+        usernameCheckResult := tx.Where("username = ?", request.Username).First(&usernameCheck)
+        if usernameCheckResult.RowsAffected > 0 {
+            return errors.New(fmt.Sprintf("\"%s\" already exists", request.Username))
+        }
+        r := config.Db.Model(&model.User{}).Where("id = ?", jwtClaims.UserID).Update("username", request.Username)
+        return r.Error
+    }); err != nil {
+        return SetUsernameResponse{
+            Message: fmt.Sprintf("Cannot change username: %s", err),
+        }, err
+    } else {
+        return SetUsernameResponse{
+            Message: "Changed username",
+            Username: request.Username,
+        }, nil
+    }
+}

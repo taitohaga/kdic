@@ -24,6 +24,8 @@ func CreateAuthRoute(p iris.Party) {
 	profile.Use(verifyMiddleware)
 	profile.Handle("GET", "/", getProfile)
 	profile.Handle("GET", "/email", getEmail)
+    profile.Handle("POST", "/edit", setProfile)
+    profile.Handle("POST", "/edit/username", setUsername)
 }
 
 func servicePing(ctx iris.Context) {
@@ -112,4 +114,26 @@ func getEmail(ctx iris.Context) {
 		ctx.StatusCode(iris.StatusNotFound)
 	}
 	ctx.JSON(response)
+}
+
+func setProfile(ctx iris.Context) {
+    var request interface{}
+    ctx.ReadJSON(&request)
+    claims, _ := jwt.Get(ctx).(*config.Claims)
+    response, err := auth.SetProfile(request, claims)
+	if err != nil {
+		ctx.StatusCode(iris.StatusNotFound)
+	}
+	ctx.JSON(response)
+}
+
+func setUsername(ctx iris.Context) {
+    var request auth.SetUsernameRequest
+    ctx.ReadJSON(&request)
+    claims, _ := jwt.Get(ctx).(*config.Claims)
+    response, err := auth.SetUsername(request, claims)
+    if err != nil {
+        ctx.StatusCode(iris.StatusBadRequest)
+    }
+    ctx.JSON(response)
 }
