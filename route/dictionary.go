@@ -21,12 +21,12 @@ func CreateDicRoute(p iris.Party) {
 	p.Handle("POST", "/create", createDictionary)
 	p.Handle("GET", "/i/{dicname:string}", getDictionary)
 	p.Handle("GET", "/i/{dicname:string}/people", checkAuthority)
-    p.Handle("POST", "/edit/{dicname:string}", setDictionary)
+	p.Handle("POST", "/edit/{dicname:string}", setDictionary)
 
-    word := p.Party("/{dicname:string}")
-    word.Handle("POST", "/create", createWord)
-    word.Handle("POST", "/edit/{word_id:uint}", setWord)
-    word.Handle("GET", "/words", listWord)
+	word := p.Party("/{dicname:string}")
+	word.Handle("POST", "/create", createWord)
+	word.Handle("POST", "/edit/{word_id:uint}", setWord)
+	word.Handle("GET", "/words", listWord)
 }
 
 func authenticate(ctx iris.Context) {
@@ -96,9 +96,9 @@ func checkAuthority(ctx iris.Context) {
 }
 
 func setDictionary(ctx iris.Context) {
-    var request interface{}
-    ctx.ReadJSON(&request)
-    response, err := dic.SetDictionary(request, ctx.Params().GetString("dicname"))
+	var request interface{}
+	ctx.ReadJSON(&request)
+	response, err := dic.SetDictionary(request, ctx.Params().GetString("dicname"))
 	if err != nil {
 		ctx.StatusCode(iris.StatusBadRequest)
 	}
@@ -106,10 +106,10 @@ func setDictionary(ctx iris.Context) {
 }
 
 func createWord(ctx iris.Context) {
-    var request word.CreateWordRequest
-    ctx.ReadJSON(&request)
+	var request word.CreateWordRequest
+	ctx.ReadJSON(&request)
 	claims, _ := jwt.Get(ctx).(*config.Claims)
-    response, err := word.CreateWord(request, claims, ctx.Params().GetString("dicname"))
+	response, err := word.CreateWord(request, claims, ctx.Params().GetString("dicname"))
 	if err != nil {
 		ctx.StatusCode(iris.StatusBadRequest)
 	}
@@ -117,10 +117,10 @@ func createWord(ctx iris.Context) {
 }
 
 func setWord(ctx iris.Context) {
-    var request interface{}
-    ctx.ReadJSON(&request)
+	var request interface{}
+	ctx.ReadJSON(&request)
 	claims, _ := jwt.Get(ctx).(*config.Claims)
-    response, err := word.SetWord(request, claims, ctx.Params().GetString("dicname"), ctx.Params().GetUintDefault("word_id", 0))
+	response, err := word.SetWord(request, claims, ctx.Params().GetString("dicname"), ctx.Params().GetUintDefault("word_id", 0))
 	if err != nil {
 		ctx.StatusCode(iris.StatusBadRequest)
 	}
@@ -128,10 +128,10 @@ func setWord(ctx iris.Context) {
 }
 
 func listWord(ctx iris.Context) {
-    var request interface{}
-    ctx.ReadJSON(&request)
-    response, err := word.ListWord(ctx.Params().GetString("dicname"))
-    if err != nil {
+	var request interface{}
+	ctx.ReadJSON(&request)
+	response, err := word.ListWord(ctx.Params().GetString("dicname"))
+	if err != nil {
 		ctx.StatusCode(iris.StatusBadRequest)
 	}
 	ctx.JSON(response)

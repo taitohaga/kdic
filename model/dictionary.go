@@ -10,7 +10,7 @@ type Dictionary struct {
 	DictionaryName        string         `json:"dictionary_name"`
 	DictionaryDisplayName string         `json:"dictionary_display_name"`
 	OwnerID               uint32         `json:"owner_id"`
-	User                  *User           `gorm:"foreignKey:OwnerID" json:"__owner,omitempty"`
+	User                  *User          `gorm:"foreignKey:OwnerID" json:"__owner,omitempty"`
 	Description           string         `json:"description"`
 	ImageUrl              string         `json:"image_url"`
 	ScansionUrl           string         `json:"scansion_url"`
@@ -32,7 +32,7 @@ type Word struct {
 	DictionaryID uint32         `json:"dictionary_id"`
 	Dictionary   Dictionary     `json:"__dictionary,omitempty"`
 	AddedBy      uint32         `json:"adder_id"`
-	User         *User           `gorm:"foreignKey:AddedBy" json:",omitempty"`
+	User         *User          `gorm:"foreignKey:AddedBy" json:",omitempty"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `json:"deleted_at"`
@@ -41,11 +41,11 @@ type Word struct {
 type WordSnapshot struct {
 	ID          uint32    `json:"wordsnaphot_id"`
 	WordID      uint32    `json:"word_id"`
-	Word        *Word      `json:"__word,omitempty"`
+	Word        *Word     `json:"__word,omitempty"`
 	Headword    string    `json:"word"`
 	Translation string    `json:"translation"`
 	Example     string    `json:"example"`
 	EditedBy    uint32    `json:"editor_id"`
-	User        *User      `gorm:"foreignKey:EditedBy" json:"__user,omitempty"`
+	User        *User     `gorm:"foreignKey:EditedBy" json:"__user,omitempty"`
 	UpdatedAt   time.Time `json:"updated_at" gorm:"autoCreateTime"`
 }
