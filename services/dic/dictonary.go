@@ -87,7 +87,10 @@ type CheckAuthorityResponse struct {
 
 func CheckAuthority(req CheckAuthorityRequest) (CheckAuthorityResponse, error) {
 	var users []model.User
-	result := config.Db.Model(&model.RUserDictionary{}).Joins("left join tb_dictionary on tb_dictionary.id = tb_r_user_dictionary.dictionary_id").Joins("left join tb_user on tb_user.id = tb_r_user_dictionary.user_id").Where("tb_dictionary.dictionary_name = ?", req.DictionaryName).Select("tb_user.id", "tb_user.username").Find(&users)
+    var result *gorm.DB
+    result = config.Db.Model(&users).Joins("left join tb_r_user_dictionary on tb_r_user_dictionary.user_id = tb_user.id")
+    result = result.Joins("left join tb_dictionary on tb_r_user_dictionary.dictionary_id = tb_dictionary.id")
+    result = result.Where("tb_dictionary.dictionary_name = ?", req.DictionaryName).Select("tb_user.*").Find(&users)
 	if result.Error != nil {
 		return CheckAuthorityResponse{
 			Message: fmt.Sprintf("Could not list authorized users: %s", result.Error),
@@ -118,9 +121,38 @@ func GetDictionary(req GetDictionaryRequest) (GetDictionaryResponse, error) {
 			Message: fmt.Sprintf("Dictionary not found: %s", req.DictionaryName),
 		}, selectDic.Error
 	}
-	config.Db.Model(&d.User).Where("id = ?", d.OwnerID).First(&d.User)
 	return GetDictionaryResponse{
 		Message:    fmt.Sprintf("Found dictionary %s (%s)", d.DictionaryName, d.DictionaryDisplayName),
 		Dictionary: d,
 	}, nil
+}
+
+type SetDictionaryResponse struct {
+    Message string `json:"msg"`
+    UpdatedCount uint `json:"updated_count"`
+    Dictionary model.Dictionary `json:"updated_dictionary"`
+}
+
+func SetDictionary(request interface{}, dictionaryName string) (SetDictionaryResponse, error) {
+    req := request.(map[string]interface{})
+    var d model.Dictionary
+    var updatedCount uint = 0
+    for _, field := range []string{"dictionary_display_name", "description", "image_url", "scansion_url"} {
+        if val, prs := req[field]; prs {
+            if field == "dictionary_dispaly_name" && val == "" {
+                continue
+            }
+            r := config.Db.Model(&d).Where("dictionary_name = ?", dictionaryName).Update(field, val)
+            if r.Error == nil {
+                updatedCount += 1
+            }
+        }
+    }
+    config.Db.Where("dictionary_name = ?", dictionaryName).First(&d)
+    config.Db.Where("id = ?", d.OwnerID).First(&d.User)
+    return SetDictionaryResponse{
+        Message: fmt.Sprintf("%d fields were updated", updatedCount),
+        UpdatedCount: updatedCount,
+        Dictionary: d,
+    }, nil
 }

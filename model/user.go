@@ -19,14 +19,14 @@ type User struct {
 type Account struct {
 	ID       uint32
 	UserID   uint32
-	User     User
+	User     *User
 	Password string
 }
 
 type Email struct {
 	ID         uint32
 	UserID     uint32
-	User       User
+	User       *User
 	Email      string `gorm:"uniqueIndex,check:email <> ''"`
 	IsPrimary  bool
 	IsVerified bool

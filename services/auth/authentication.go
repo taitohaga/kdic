@@ -71,7 +71,7 @@ func CreateUser(req CreateUserRequest) (CreateUserResponse, error) {
 			return errors.New(fmt.Sprintf("DB claims an error: %s", insertUser.Error))
 		}
 		u_email := model.Email{
-			User:      u,
+			User:      &u,
 			Email:     req.Email,
 			IsPrimary: true,
 		}
@@ -80,7 +80,7 @@ func CreateUser(req CreateUserRequest) (CreateUserResponse, error) {
 			return errors.New(fmt.Sprintf("DB claims an error: %s", insertEmail.Error))
 		}
 		u_account := model.Account{
-			User:     u,
+			User:     &u,
 			Password: util.HashSHA256(req.Password),
 		}
 		insertAccount := tx.Create(&u_account)
