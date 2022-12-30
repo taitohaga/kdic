@@ -26,6 +26,7 @@ func CreateDicRoute(p iris.Party) {
 	word := p.Party("/{dicname:string}")
 	word.Handle("POST", "/create", createWord)
 	word.Handle("POST", "/edit/{word_id:uint}", setWord)
+    word.Handle("DELETE", "/delete", delWord)
 	word.Handle("GET", "/words", listWord)
 }
 
@@ -131,6 +132,17 @@ func listWord(ctx iris.Context) {
 	var request interface{}
 	ctx.ReadJSON(&request)
 	response, err := word.ListWord(ctx.Params().GetString("dicname"))
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+	}
+	ctx.JSON(response)
+}
+
+func delWord(ctx iris.Context) {
+	var request word.DelWordRequest
+	ctx.ReadJSON(&request)
+	claims, _ := jwt.Get(ctx).(*config.Claims)
+	response, err := word.DelWord(request, claims, ctx.Params().GetString("dicname"))
 	if err != nil {
 		ctx.StatusCode(iris.StatusBadRequest)
 	}
