@@ -80,7 +80,7 @@ func CreateWord(req CreateWordRequest, jwtClaims *config.Claims, dictionaryName 
 		}, r
 	}
 	ws.User = &u
-    config.Db.Model(&model.Dictionary{}).Where("dictionary_name = ?", dictionaryName).Update("updated_at", time.Now())
+	config.Db.Model(&model.Dictionary{}).Where("dictionary_name = ?", dictionaryName).Update("updated_at", time.Now())
 	return CreateWordResponse{
 		Message:      fmt.Sprintf("Added word to %s", dictionaryName),
 		WordID:       w.ID,
@@ -158,32 +158,32 @@ func SetWord(request interface{}, jwtClaims *config.Claims, dictionaryName strin
 }
 
 type DelWordRequest struct {
-    WordID uint32 `json:"word_id"`
+	WordID uint32 `json:"word_id"`
 }
 
 type DelWordResponse struct {
-    Message string `json:"msg"`
-    DeletedCount uint32 `json:"deleted_count"`
+	Message      string `json:"msg"`
+	DeletedCount uint32 `json:"deleted_count"`
 }
 
-func DelWord(req DelWordRequest, jwtClaims *config.Claims, dictionaryName string) (DelWordResponse, error){
-    word := model.Word{
-        ID: req.WordID,
-    }
-    var dictionary model.Dictionary
-    config.Db.Model(&dictionary).Where("dictionary_name = ?", dictionaryName).First(&dictionary)
-    result := config.Db.Where("dictionary_id = ?", dictionary.ID).Delete(&word)
-    if result.Error != nil {
-        e := fmt.Sprintf("Could not delete word %d: %s", req.WordID, result.Error)
-        return DelWordResponse{
-            Message: e,
-            DeletedCount: 0,
-        }, errors.New(e)
-    }
-    return DelWordResponse{
-        Message: fmt.Sprintf("Deleted word %d", req.WordID),
-        DeletedCount: uint32(result.RowsAffected),
-    }, nil
+func DelWord(req DelWordRequest, jwtClaims *config.Claims, dictionaryName string) (DelWordResponse, error) {
+	word := model.Word{
+		ID: req.WordID,
+	}
+	var dictionary model.Dictionary
+	config.Db.Model(&dictionary).Where("dictionary_name = ?", dictionaryName).First(&dictionary)
+	result := config.Db.Where("dictionary_id = ?", dictionary.ID).Delete(&word)
+	if result.Error != nil {
+		e := fmt.Sprintf("Could not delete word %d: %s", req.WordID, result.Error)
+		return DelWordResponse{
+			Message:      e,
+			DeletedCount: 0,
+		}, errors.New(e)
+	}
+	return DelWordResponse{
+		Message:      fmt.Sprintf("Deleted word %d", req.WordID),
+		DeletedCount: uint32(result.RowsAffected),
+	}, nil
 }
 
 type ListWordResponse struct {
@@ -197,7 +197,7 @@ func ListWord(dicname string) (ListWordResponse, error) {
 	subquery := config.Db.Table("tb_word")
 	subquery = subquery.Joins("INNER JOIN tb_dictionary ON tb_word.dictionary_id = tb_dictionary.id")
 	subquery = subquery.Where("tb_dictionary.dictionary_name = ?", dicname)
-    subquery = subquery.Where("tb_word.deleted_at IS NULL")
+	subquery = subquery.Where("tb_word.deleted_at IS NULL")
 	subquery = subquery.Select("dictionary_id as dictionary_id, tb_word.id as word_id")
 	query := config.Db.Table("tb_word_snapshot")
 	query = query.Joins("INNER JOIN (?) as T ON T.word_id = tb_word_snapshot.word_id", subquery)

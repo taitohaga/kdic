@@ -26,7 +26,7 @@ func CreateDicRoute(p iris.Party) {
 	word := p.Party("/{dicname:string}")
 	word.Handle("POST", "/create", createWord)
 	word.Handle("POST", "/edit/{word_id:uint}", setWord)
-    word.Handle("DELETE", "/delete", delWord)
+	word.Handle("DELETE", "/delete", delWord)
 	word.Handle("GET", "/words", listWord)
 }
 
