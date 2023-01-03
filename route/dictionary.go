@@ -12,6 +12,8 @@ import (
 )
 
 func CreateDicRoute(p iris.Party) {
+    p.UseRouter(Cors)
+    p.AllowMethods(iris.MethodOptions)
 	verifyMiddleware := config.Verifier.Verify(func() interface{} {
 		return new(config.Claims)
 	})
@@ -19,6 +21,7 @@ func CreateDicRoute(p iris.Party) {
 	p.Use(authenticate)
 
 	p.Handle("POST", "/create", createDictionary)
+    p.Handle("GET", "/my", getMyDictionaries)
 	p.Handle("GET", "/i/{dicname:string}", getDictionary)
 	p.Handle("GET", "/i/{dicname:string}/people", checkAuthority)
 	p.Handle("POST", "/edit/{dicname:string}", setDictionary)
@@ -147,4 +150,16 @@ func delWord(ctx iris.Context) {
 		ctx.StatusCode(iris.StatusBadRequest)
 	}
 	ctx.JSON(response)
+}
+
+func getMyDictionaries(ctx iris.Context) {
+    claims, _ := jwt.Get(ctx).(*config.Claims)
+    request := dic.GetUserDictionariesRequest{
+        UserID: claims.UserID,
+    }
+    response, err := dic.GetUserDictionaries(request)
+    if err != nil {
+        ctx.StatusCode(iris.StatusBadRequest)
+    }
+    ctx.JSON(response)
 }

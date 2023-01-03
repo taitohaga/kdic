@@ -9,7 +9,17 @@ import (
 )
 
 func main() {
-	app := iris.Default()
+	app := iris.New()
+    app.Logger().SetLevel("debug")
+
+	version := app.Party("version")
+	route.CreateVersionRoute(version)
+
+	auth := app.Party("auth")
+	route.CreateAuthRoute(auth)
+
+	dic := app.Party("dic")
+	route.CreateDicRoute(dic)
 
 	configErr := config.InitConfig()
 	app.Logger().Debugf("Mode: %s", os.Getenv("MODE"))
@@ -28,15 +38,6 @@ func main() {
 	if jwtErr != nil {
 		app.Logger().Fatalf("Failed to initialize JWT configs: %s", jwtErr)
 	}
-
-	version := app.Party("version")
-	route.CreateVersionRoute(version)
-
-	auth := app.Party("auth")
-	route.CreateAuthRoute(auth)
-
-	dic := app.Party("dic")
-	route.CreateDicRoute(dic)
 
 	app.Listen(":8080")
 }

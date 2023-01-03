@@ -219,3 +219,25 @@ func ListWord(dicname string) (ListWordResponse, error) {
 		Words:          words,
 	}, nil
 }
+
+func GetWordCount(dicname string) (uint32, error) {
+    var words []model.WordSnapshot
+	subquery := config.Db.Table("tb_word")
+	subquery = subquery.Joins("INNER JOIN tb_dictionary ON tb_word.dictionary_id = tb_dictionary.id")
+	subquery = subquery.Where("tb_dictionary.dictionary_name = ?", dicname)
+	subquery = subquery.Where("tb_word.deleted_at IS NULL")
+	subquery = subquery.Select("dictionary_id as dictionary_id, tb_word.id as word_id")
+	query := config.Db.Table("tb_word_snapshot")
+	query = query.Joins("INNER JOIN (?) as T ON T.word_id = tb_word_snapshot.word_id", subquery)
+	query = query.Group("dictionary_id, T.word_id")
+	query = query.Select("dictionary_id, T.word_id, max(updated_at) as latest")
+	db := config.Db.Model(&words)
+	db = db.Joins("INNER JOIN (?) as T2 on tb_word_snapshot.updated_at = T2.latest", query)
+	db = db.Order("word_id")
+	result := db.Find(&words)
+    if result.Error != nil {
+        err := fmt.Sprintf("Could not get word count: %s", result.Error)
+        return 0, errors.New(err)
+    }
+    return uint32(len(words)), nil
+}

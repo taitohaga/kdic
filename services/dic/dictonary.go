@@ -7,6 +7,7 @@ import (
 
 	"github.com/taitohaga/kdic/config"
 	"github.com/taitohaga/kdic/model"
+	"github.com/taitohaga/kdic/services/word"
 	"gorm.io/gorm"
 )
 
@@ -155,4 +156,46 @@ func SetDictionary(request interface{}, dictionaryName string) (SetDictionaryRes
 		UpdatedCount: updatedCount,
 		Dictionary:   d,
 	}, nil
+}
+
+type GetUserDictionariesRequest struct {
+    UserID uint32 `json:"user_id"`
+}
+
+type DictionaryFront struct {
+    model.Dictionary
+    WordCount uint32 `json:"word_count"`
+}
+
+type GetUserDictionariesResponse struct {
+    Message string `json:"msg"`
+    Dictionaries []DictionaryFront `json:"dictionaries"`
+}
+
+func GetUserDictionaries(request GetUserDictionariesRequest) (GetUserDictionariesResponse, error) {
+    var dictionaries []model.Dictionary
+    selectDic := config.Db.Model(&dictionaries).Where("owner_id = ?", request.UserID).Find(&dictionaries)
+    if selectDic.Error != nil {
+        e := fmt.Sprintf("Could not get user's dictionaries: %s", selectDic.Error)
+        return GetUserDictionariesResponse{
+            Message: e,
+        }, errors.New(e)
+    }
+    dinfo := make([]DictionaryFront, len(dictionaries))
+    for i, dictionary := range dictionaries {
+        count, err := word.GetWordCount(dictionary.DictionaryName)
+        if err != nil {
+            return GetUserDictionariesResponse{
+                Message: fmt.Sprintf("Could not get dictionary's count: %s", err),
+            }, err
+        }
+        dinfo[i] = DictionaryFront{
+            Dictionary: dictionary,
+            WordCount: count,
+        }
+    }
+    return GetUserDictionariesResponse{
+        Message: fmt.Sprintf("Found %d dictionaries", len(dictionaries)),
+        Dictionaries: dinfo,
+    }, nil
 }

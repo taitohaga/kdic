@@ -10,6 +10,8 @@ import (
 )
 
 func CreateAuthRoute(p iris.Party) {
+    p.UseRouter(Cors)
+    p.AllowMethods(iris.MethodOptions)
 	verifyMiddleware := config.Verifier.Verify(func() interface{} {
 		return new(config.Claims)
 	})
